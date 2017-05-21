@@ -1,4 +1,5 @@
 upload/Uploads
 uploads
 .user.ini
+ueditor/php/config.json
 #config/config.php
