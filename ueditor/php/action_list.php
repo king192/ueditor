@@ -1,0 +1,134 @@
+<?php
+/**
+ * 获取已上传的文件列表
+ * User: Jinqn
+ * Date: 14-04-09
+ * Time: 上午10:17
+ */
+include "Uploader.class.php";
+
+/* 判断类型 */
+switch ($_GET['action']) {
+    /* 列出文件 */
+    case 'listfile':
+        $allowFiles = $CONFIG['fileManagerAllowFiles'];
+        $listSize = $CONFIG['fileManagerListSize'];
+        $path = getFullName($CONFIG['fileManagerListPath']);
+        break;
+    /* 列出图片 */
+    case 'listimage':
+    default:
+        $allowFiles = $CONFIG['imageManagerAllowFiles'];
+        $listSize = $CONFIG['imageManagerListSize'];
+        $path = getFullName($CONFIG['imageManagerListPath']);
+}
+$allowFiles = substr(str_replace(".", "|", join("", $allowFiles)), 1);
+
+/* 获取参数 */
+$size = isset($_GET['size']) ? htmlspecialchars($_GET['size']) : $listSize;
+$start = isset($_GET['start']) ? htmlspecialchars($_GET['start']) : 0;
+$end = $start + $size;
+
+/* 获取文件列表 */
+$path = $_SERVER['DOCUMENT_ROOT'] . (substr($path, 0, 1) == "/" ? "":"/") . $path;
+$files = getfiles($path, $allowFiles);
+if (!count($files)) {
+    return json_encode(array(
+        "state" => "no match file",
+        "list" => array(),
+        "start" => $start,
+        "total" => count($files)
+    ));
+}
+
+/* 获取指定范围的列表 */
+$len = count($files);
+for ($i = min($end, $len) - 1, $list = array(); $i < $len && $i >= 0 && $i >= $start; $i--){
+    $list[] = $files[$i];
+}
+//倒序
+//for ($i = $end, $list = array(); $i < $len && $i < $end; $i++){
+//    $list[] = $files[$i];
+//}
+
+/* 返回数据 */
+$result = json_encode(array(
+    "state" => "SUCCESS",
+    "list" => $list,
+    "start" => $start,
+    "total" => count($files)
+));
+
+return $result;
+
+
+/**
+ * 遍历获取目录下的指定类型的文件
+ * @param $path
+ * @param array $files
+ * @return array
+ */
+function getfiles($path, $allowFiles, &$files = array())
+{
+    if (!is_dir($path)) return null;
+    if(substr($path, strlen($path) - 1) != '/') $path .= '/';
+    $handle = opendir($path);
+    while (false !== ($file = readdir($handle))) {
+        if ($file != '.' && $file != '..') {
+            $path2 = $path . $file;
+            if (is_dir($path2)) {
+                getfiles($path2, $allowFiles, $files);
+            } else {
+                if (preg_match("/\.(".$allowFiles.")$/i", $file)) {
+                    $files[] = array(
+                        'url'=> substr($path2, strlen($_SERVER['DOCUMENT_ROOT'])),
+                        'mtime'=> filemtime($path2)
+                    );
+                }
+            }
+        }
+    }
+    return $files;
+}
+    /**
+     * 重命名文件
+     * @return string
+     */
+    function getFullName($format)
+    {
+        //替换日期事件
+        $t = time();
+        $d = explode('-', date("Y-y-m-d-H-i-s"));
+        // $format = $this->config["pathFormat"];
+        $format = str_replace("{yyyy}", $d[0], $format);
+        $format = str_replace("{yy}", $d[1], $format);
+        $format = str_replace("{mm}", $d[2], $format);
+        $format = str_replace("{dd}", $d[3], $format);
+        $format = str_replace("{hh}", $d[4], $format);
+        $format = str_replace("{ii}", $d[5], $format);
+        $format = str_replace("{ss}", $d[6], $format);
+        $format = str_replace("{time}", $t, $format);
+        // $myConfig = include 'config.php';
+        $mm = parse_url($_SERVER['HTTP_REFERER']);
+        $access_origin = $mm['scheme'].'://'.$mm['host'];
+        $cross_domain = str_replace(['://','.'], ['_','_'], $access_origin);
+        $format = str_replace("{cross_domain}", $cross_domain, $format);
+
+        // //过滤文件名的非法字符,并替换文件名
+        // $oriName = substr($this->oriName, 0, strrpos($this->oriName, '.'));
+        // $oriName = preg_replace("/[\|\?\"\<\>\/\*\\\\]+/", '', $oriName);
+        // $format = str_replace("{filename}", $oriName, $format);
+
+        // //替换随机字符串
+        // $randNum = rand(1, 10000000000) . rand(1, 10000000000);
+        // if (preg_match("/\{rand\:([\d]*)\}/i", $format, $matches)) {
+        //     $format = preg_replace("/\{rand\:[\d]*\}/i", substr($randNum, 0, $matches[1]), $format);
+        // }
+
+        // if($this->fileType){
+        //     $ext = $this->fileType;
+        // } else {
+        //     $ext = $this->getFileExt();
+        // }
+        return $format;
+    }

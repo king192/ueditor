@@ -1,0 +1,7 @@
+<?php
+// header('Access-Control-Allow-Origin: '.$cross_domain);
+
+return [
+	'daly_size' => '52428800',//50M
+	'cross_domain' => ['http://tp55.qq','http://test.com'],//跨域域名
+];
