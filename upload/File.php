@@ -43,7 +43,7 @@ class File {
         $extension = $pathinfo['extension'];
         if (!is_dir($dirname)) {
             if(!mkdir($dirname, 0777, true)){
-            	exit(json_encode(['code' => -2,'msg' => '文件夹创建失败']));
+            	exit(json_encode(['code' => -2,'msg' => '文件夹:'.$dirname.'创建失败']));
             }
         }
         //接收base64编码数据
